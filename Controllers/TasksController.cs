@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;   // Dodaj tę linię dla IEnumerable<>
-using System.Threading.Tasks;      // Dodaj tę linię dla Task<>
-using Microsoft.EntityFrameworkCore;  // Dodaj tę linię dla DbContext
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using TaskManagementApp.Data;
-using TaskManagementApp.Models;  // Dodaj tę linię dla AppDbContext
+using TaskManagementApp.Models;
 
 
 [Route("api/[controller]")]
@@ -29,5 +29,36 @@ public class TasksController : ControllerBase
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetTasks), new { id = task.Id }, task);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteTask(int id)
+    {
+        var task = await _context.Tasks.FindAsync(id);
+        if (task == null)
+        {
+            return NotFound();
+        }
+
+        _context.Tasks.Remove(task);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPost("{taskId}/assign/{userId}")]
+    public async Task<IActionResult> AssignUserToTask(int taskId, int userId)
+    {
+        var task = await _context.Tasks.FindAsync(taskId);
+        var user = await _context.Users.FindAsync(userId);
+
+        if (task == null || user == null)
+        {
+            return NotFound();
+        }
+
+        task.AssignedUserId = userId;
+        await _context.SaveChangesAsync();
+
+        return Ok(task);
     }
 }

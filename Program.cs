@@ -1,27 +1,37 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Hosting;  // Dodano tę przestrzeń nazw
-using Swashbuckle.AspNetCore.SwaggerGen;
-using TaskManagementApp.Data;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
-using System;  // Dodano przestrzeń nazw do obsługi konfiguracji
+using System;
+using TaskManagementApp.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Dodaj kontekst bazy danych
+// Konfiguracja bazy danych MySQL
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), 
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
                      new MySqlServerVersion(new Version(8, 0, 33))));
 
-// Dodaj kontrolery i Swagger
+// Dodanie obsługi CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Włącz Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -29,7 +39,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors("AllowAll");
+app.UseAuthorization();
 app.MapControllers();
+
+// Logowanie dostępnych endpointów
+Console.WriteLine("Dostępne endpointy:");
+foreach (var endpoint in app.Urls)
+{
+    Console.WriteLine(endpoint);
+}
 
 app.Run();

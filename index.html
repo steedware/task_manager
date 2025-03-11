@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+</head>
+<body>
+    <h1>Task Manager</h1>
+
+    <h2>Dodaj użytkownika</h2>
+    <input type="text" id="username" placeholder="Nazwa użytkownika">
+    <button onclick="addUser()">Dodaj użytkownika</button>
+
+    <h2>Dodaj zadanie</h2>
+    <input type="text" id="taskTitle" placeholder="Tytuł zadania">
+    <input type="text" id="taskDescription" placeholder="Opis zadania">
+    <select id="taskUser">
+        <option value="">Wybierz użytkownika</option>
+    </select>
+    <button onclick="addTask()">Dodaj zadanie</button>
+
+    <h2>Lista zadań</h2>
+    <ul id="taskList"></ul>
+
+    <script>
+        const apiUrl = 'http://localhost:5008/api';
+
+        // Pobiera listę użytkowników i aktualizuje dropdown
+        function fetchUsers() {
+            fetch(`${apiUrl}/users`)
+                .then(response => response.json())
+                .then(users => {
+                    const userSelect = document.getElementById('taskUser');
+                    userSelect.innerHTML = '<option value="">Wybierz użytkownika</option>';
+                    users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.name;
+                        userSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Błąd pobierania użytkowników:', error));
+        }
+
+        // Pobiera i wyświetla listę zadań
+        function fetchTasks() {
+            fetch(`${apiUrl}/tasks`)
+                .then(response => response.json())
+                .then(tasks => {
+                    const taskList = document.getElementById('taskList');
+                    taskList.innerHTML = '';
+                    tasks.forEach(task => {
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `
+                            <strong>${task.title}</strong> - ${task.description}
+                            <br>Użytkownik: ${task.user ? task.user.name : 'Brak'}
+                            <br>Status: ${task.isCompleted ? '✔ Ukończone' : '❌ W toku'}
+                            <br>
+                            <button onclick="completeTask(${task.id})">✔ Oznacz jako ukończone</button>
+                            <button onclick="deleteTask(${task.id})">🗑 Usuń</button>
+                        `;
+                        taskList.appendChild(listItem);
+                    });
+                })
+                .catch(error => console.error('Błąd pobierania zadań:', error));
+        }
+
+        // Dodaje nowego użytkownika
+        function addUser() {
+            const name = document.getElementById('username').value;
+            if (!name) return alert('Wpisz nazwę użytkownika');
+
+            fetch(`${apiUrl}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            })
+            .then(response => response.json())
+            .then(() => {
+                fetchUsers();
+                alert('Dodano użytkownika!');
+            })
+            .catch(error => console.error('Błąd dodawania użytkownika:', error));
+        }
+
+        // Dodaje nowe zadanie
+        function addTask() {
+            const title = document.getElementById('taskTitle').value;
+            const description = document.getElementById('taskDescription').value;
+            const userId = document.getElementById('taskUser').value;
+
+            if (!title || !description) return alert('Wpisz tytuł i opis zadania');
+
+            fetch(`${apiUrl}/tasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description, userId: userId || null })
+            })
+            .then(response => response.json())
+            .then(() => {
+                fetchTasks();
+                alert('Dodano zadanie!');
+            })
+            .catch(error => console.error('Błąd dodawania zadania:', error));
+        }
+
+        // Oznacza zadanie jako ukończone
+        function completeTask(taskId) {
+            fetch(`${apiUrl}/tasks/${taskId}/complete`, { method: 'PUT' })
+                .then(() => fetchTasks())
+                .catch(error => console.error('Błąd oznaczania jako ukończone:', error));
+        }
+
+        // Usuwa zadanie
+        function deleteTask(taskId) {
+            fetch(`${apiUrl}/tasks/${taskId}`, { method: 'DELETE' })
+                .then(() => fetchTasks())
+                .catch(error => console.error('Błąd usuwania zadania:', error));
+        }
+
+        // Wczytaj użytkowników i zadania na starcie
+        fetchUsers();
+        fetchTasks();
+    </script>
+</body>
+</html>
