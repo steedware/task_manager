@@ -29,5 +29,5 @@ Aplikacja do zarządzania zadaniami z interfejsem webowym, oparta na technologia
 
 1. **Sklonuj repozytorium**:
    ```bash
-   git clone https://github.com/szymek343t/task_manager.git
+   git clone https://github.com/STBasht/task_manager.git
    cd task_manager
